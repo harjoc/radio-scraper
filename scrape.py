@@ -128,5 +128,5 @@ def lookup_yt_urls():
 
 
 if __name__ == "__main__":
-#    download_playlists()
+    download_playlists()
     lookup_yt_urls()
