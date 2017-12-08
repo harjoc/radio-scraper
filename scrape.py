@@ -64,17 +64,17 @@ def get_youtube_url(track):
     return iframe and embed_to_watch(iframe['src']) or 'NOTFOUND'
 
 
-def download_playlists():
+def download_playlists(d1, d2):
     os.makedirs(playlist_dir, exist_ok=True)
 
     eprint('getting playlists')
 
-    for day in range(7):
+    for day in range(d1, d2+1):
         dt = datetime.now() + timedelta(days=-day)
         fn = os.path.join(playlist_dir, dt.strftime('%Y-%m-%d'))
         
-        #if os.path.exists(fn): # and day > 0:
-        #    continue
+        if os.path.exists(fn) and day > 0:
+            continue
 
         eprint(fn)
         
@@ -88,13 +88,21 @@ def download_playlists():
         links = soup.find_all('a', href=True, attrs={'class': 'ajax'})
 
         tracks = [t for t in links if t['href'].startswith('/track/')]
-        
+
         f = open(fn, 'w')
         
-        eprint('found %d tracks' % len(tracks))
+        new = 0
 
         for t in tracks:
-            f.write('%s\t%s\n' % (t['href'], t.text.strip()))
+            href = t['href']
+            text = t.text.strip()
+
+            f.write('%s\t%s\n' % (href, text))
+
+            if href not in known_tracks:
+                new += 1
+
+        eprint('found %d tracks, %d new' % (len(tracks), new))
 
         f.close()
 
@@ -113,7 +121,17 @@ def lookup_yt_urls():
         abs_fn = playlist_dir + '/' + fn
         eprint('looking up youtube urls in', abs_fn)
         with open(abs_fn, 'r') as f:
-            for line in f:
+            lines = f.readlines()
+            
+            new = 0
+            for line in lines:
+                track, title = line.strip().split(maxsplit=1)
+                if track not in known_tracks:
+                    new += 1
+
+            eprint('%d new tracks' % new)
+            
+            for line in lines:
                 track, title = line.strip().split(maxsplit=1)
                 if track not in known_tracks:
                     eprint('requesting', track, title)
@@ -126,7 +144,16 @@ def lookup_yt_urls():
                     
                     eprint('    ', yt_url)
 
-
 if __name__ == "__main__":
-    download_playlists()
+    d1 = 1
+    d2 = 7
+
+    if len(sys.argv) == 3:
+        d1 = int(sys.argv[1])
+        d2 = int(sys.argv[2])
+    elif len(sys.argv) != 1:
+        eprint('syntax: scrape.py d1 d2   (e.g. 1 7)')
+        sys.exit(1)
+
+    download_playlists(d1, d2)
     lookup_yt_urls()
