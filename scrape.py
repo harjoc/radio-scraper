@@ -65,6 +65,14 @@ def get_youtube_url(track):
 
 
 def download_playlists(d1, d2):
+    known_tracks_set = set()
+
+    if os.path.exists(tracks_fn):
+        with open(tracks_fn, 'r') as f:
+            for line in f:
+                track, youtube, title = line.strip().split(maxsplit=2)
+                known_tracks_set.add(track)
+
     os.makedirs(playlist_dir, exist_ok=True)
 
     eprint('getting playlists')
@@ -99,8 +107,9 @@ def download_playlists(d1, d2):
 
             f.write('%s\t%s\n' % (href, text))
 
-            if href not in known_tracks:
+            if href not in known_tracks_set:
                 new += 1
+                known_tracks_set.add(href)
 
         eprint('found %d tracks, %d new' % (len(tracks), new))
 
